@@ -4,6 +4,7 @@ import '../../services/database_service.dart';
 import '../appel_page.dart';
 import 'eleve_page.dart';
 import 'eleve_add_page.dart';
+import 'package:intl/intl.dart';
 
 class ListeElevesPage extends StatefulWidget {
   final int coursId;
@@ -30,6 +31,15 @@ class _ListeElevesPageState extends State<ListeElevesPage> {
     setState(() {
       eleves = data.map((e) => Eleve.fromJson(e)).toList();
     });
+  }
+
+  String formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      return DateFormat('dd/MM/yyyy').format(date);
+    } catch (_) {
+      return dateStr; // retourne la string brute si parsing échoue
+    }
   }
 
   @override
@@ -63,7 +73,7 @@ class _ListeElevesPageState extends State<ListeElevesPage> {
           final eleve = eleves[index];
           return ListTile(
             title: Text("${eleve.prenom} ${eleve.nom}"),
-            subtitle: Text("Né le ${eleve.dateNaissance}"), // String directement
+            subtitle: Text("Né le ${formatDate(eleve.dateNaissance.toString())}"),
             onTap: () async {
               await Navigator.push(
                 context,
@@ -83,7 +93,7 @@ class _ListeElevesPageState extends State<ListeElevesPage> {
           await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => EleveAddPage(coursId: widget.coursId),
+              builder: (context) => EleveAddPage(coursIds: [widget.coursId]),
             ),
           );
           loadEleves(); // recharger la liste après ajout

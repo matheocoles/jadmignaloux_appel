@@ -1,10 +1,13 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:io';
+
+import 'package:flutter/material.dart';
 import '../../services/database_service.dart';
 import '../../models/eleve.dart';
 
 class EleveAddPage extends StatefulWidget {
-  final int? coursId; // id du cours optionnel
-  const EleveAddPage({super.key, this.coursId});
+  final List<int>? coursIds;
+
+  const EleveAddPage({super.key, this.coursIds});
 
   @override
   State<EleveAddPage> createState() => _EleveAddPageState();
@@ -24,27 +27,65 @@ class _EleveAddPageState extends State<EleveAddPage> {
   final anneePremiereDanseController = TextEditingController();
   bool adhesionAJour = true;
 
+  List<Map<String, dynamic>> coursDisponibles = [];
+  List<int> coursSelectionnes = [];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.coursIds != null) {
+      coursSelectionnes = List.from(widget.coursIds!);
+    }
+    loadCours();
+  }
+
+  Future<void> loadCours() async {
+    final data = await db.getCours();
+    setState(() {
+      coursDisponibles = data;
+    });
+  }
+
   Future<void> saveEleve() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (coursSelectionnes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Veuillez sélectionner au moins un cours")),
+      );
+      return;
+    }
+
+    // Convertir la date en DateTime
+    DateTime? dateNaissance;
+    try {
+      dateNaissance = DateTime.parse(dateNaissanceController.text.trim());
+    } catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Date de naissance invalide")),
+      );
+      return;
+    }
 
     final eleve = Eleve(
       id: 0,
       nom: nomController.text.trim(),
       prenom: prenomController.text.trim(),
-      dateNaissance: dateNaissanceController.text.trim(),
+      dateNaissance: dateNaissance, // DateTime
       nomParent: nomParentController.text.trim(),
       prenomParent: prenomParentController.text.trim(),
       emailParent: emailParentController.text.trim(),
       telParent: telParentController.text.trim(),
       anneePremiereDanse: anneePremiereDanseController.text.trim(),
       adhesionAJour: adhesionAJour,
-      coursId: widget.coursId,
+      coursIds: coursSelectionnes, // List<int>
     );
 
-    await db.addEleve(eleve, coursId: widget.coursId);
+    await db.addEleve(eleve); // supprime le paramètre coursIds
 
     Navigator.pop(context);
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +106,24 @@ class _EleveAddPageState extends State<EleveAddPage> {
               TextFormField(controller: telParentController, decoration: const InputDecoration(labelText: "Téléphone parent")),
               TextFormField(controller: anneePremiereDanseController, decoration: const InputDecoration(labelText: "1ère année danse")),
               SwitchListTile(title: const Text("Adhésion à jour"), value: adhesionAJour, onChanged: (v) => setState(() => adhesionAJour = v)),
+              const SizedBox(height: 16),
+              const Text("Cours", style: TextStyle(fontWeight: FontWeight.bold)),
+              ...coursDisponibles.map((cours) {
+                final id = cours['id'] as int;
+                return CheckboxListTile(
+                  title: Text(cours['nom']),
+                  value: coursSelectionnes.contains(id),
+                  onChanged: (v) {
+                    setState(() {
+                      if (v == true) {
+                        coursSelectionnes.add(id);
+                      } else {
+                        coursSelectionnes.remove(id);
+                      }
+                    });
+                  },
+                );
+              }).toList(),
               const SizedBox(height: 20),
               ElevatedButton(onPressed: saveEleve, child: const Text("Ajouter l'élève")),
             ],

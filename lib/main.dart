@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:jadmignaloux_appel/pages/login_page.dart';
+import 'package:jadmignaloux_appel/pages/splash_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart'; // <- important
 
@@ -21,9 +22,16 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'École de danse',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const LoginPage(),
+      debugShowCheckedModeBanner: false,
+      title: 'JAD Mignaloux',
+      theme: ThemeData(
+        primaryColor: const Color(0xFFDDAC17),
+        colorScheme: ColorScheme.fromSwatch().copyWith(
+          primary: const Color(0xFFDDAC17),
+          secondary: const Color(0xFFECC440),
+        ),
+      ),
+      home: const SplashPage(),
     );
   }
 }

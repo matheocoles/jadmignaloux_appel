@@ -5,8 +5,13 @@ import '../../appel_page.dart';
 
 class HomePageProf extends StatefulWidget {
   final String prenom; // récupéré au login
+  final int? coursId;
 
-  const HomePageProf({super.key, required this.prenom});
+  const HomePageProf({
+    super.key,
+    required this.prenom, // 🔹 Virgule manquante corrigée
+    this.coursId,
+  });
 
   @override
   State<HomePageProf> createState() => _HomePageProfState();
@@ -55,15 +60,25 @@ class _HomePageProfState extends State<HomePageProf> {
     Map<String, dynamic>? prochain;
 
     // Trier les cours par horaire_debut
-    data.sort((a, b) => a['horaire_debut'].compareTo(b['horaire_debut']));
+    data.sort((a, b) => (a['horaire_debut'] ?? "").compareTo(b['horaire_debut'] ?? ""));
 
     for (var c in data) {
+      if (c['horaire_debut'] == null || c['horaire_fin'] == null) continue;
+
+      final debutParts = c['horaire_debut'].split(':');
+      final finParts = c['horaire_fin'].split(':');
+
+      if (debutParts.length < 2 || finParts.length < 2) continue;
+
       final debut = TimeOfDay(
-          hour: int.parse(c['horaire_debut'].split(':')[0]),
-          minute: int.parse(c['horaire_debut'].split(':')[1]));
+        hour: int.tryParse(debutParts[0]) ?? 0,
+        minute: int.tryParse(debutParts[1]) ?? 0,
+      );
+
       final fin = TimeOfDay(
-          hour: int.parse(c['horaire_fin'].split(':')[0]),
-          minute: int.parse(c['horaire_fin'].split(':')[1]));
+        hour: int.tryParse(finParts[0]) ?? 0,
+        minute: int.tryParse(finParts[1]) ?? 0,
+      );
 
       // Cours en cours
       if ((currentTime.hour > debut.hour ||
@@ -106,9 +121,10 @@ class _HomePageProfState extends State<HomePageProf> {
               Card(
                 color: Colors.green[100],
                 child: ListTile(
-                  title: Text("Cours actuel : ${coursActuel!['nom']}"),
+                  title: Text("Cours actuel : ${coursActuel!['nom'] ?? 'Inconnu'}"),
                   subtitle: Text(
-                      "Horaire : ${coursActuel!['horaire_debut']} - ${coursActuel!['horaire_fin']}"),
+                    "Horaire : ${coursActuel!['horaire_debut'] ?? ''} - ${coursActuel!['horaire_fin'] ?? ''}",
+                  ),
                   trailing: ElevatedButton(
                     child: const Text("Faire l'appel"),
                     onPressed: () {
@@ -117,7 +133,7 @@ class _HomePageProfState extends State<HomePageProf> {
                         MaterialPageRoute(
                           builder: (context) => AppelPage(
                             coursId: coursActuel!['id'],
-                            coursNom: coursActuel!['nom'],
+                            coursNom: coursActuel!['nom'] ?? "Cours",
                           ),
                         ),
                       );
@@ -137,9 +153,10 @@ class _HomePageProfState extends State<HomePageProf> {
               Card(
                 color: Colors.blue[100],
                 child: ListTile(
-                  title: Text("Prochain cours : ${prochainCours!['nom']}"),
+                  title: Text("Prochain cours : ${prochainCours!['nom'] ?? 'Inconnu'}"),
                   subtitle: Text(
-                      "Horaire : ${prochainCours!['horaire_debut']} - ${prochainCours!['horaire_fin']}"),
+                    "Horaire : ${prochainCours!['horaire_debut'] ?? ''} - ${prochainCours!['horaire_fin'] ?? ''}",
+                  ),
                 ),
               )
             else
