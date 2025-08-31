@@ -31,7 +31,11 @@ class MyApp extends StatelessWidget {
           secondary: const Color(0xFFECC440),
         ),
       ),
-      home: const SplashPage(),
+      initialRoute: '/',
+      routes: {
+        '/' : (context) => const SplashPage(),
+        '/login' : (context) => const LoginPage(),
+      },
     );
   }
 }

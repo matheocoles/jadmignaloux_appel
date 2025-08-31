@@ -1,10 +1,11 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/intl.dart';
+
 import '../../../models/eleve.dart';
 import '../../../services/database_service.dart';
 import '../../eleve_page/eleve_add_page.dart';
 import '../../eleve_page/eleve_edit_page.dart';
-import 'package:intl/intl.dart';
 
 class HomePageAdmin extends StatefulWidget {
   const HomePageAdmin({super.key});
@@ -17,9 +18,10 @@ class _HomePageAdminState extends State<HomePageAdmin> {
   final db = DatabaseService();
   final client = Supabase.instance.client;
   RealtimeChannel? channel;
-  List<Eleve> eleves = [];
-  Map<int, List<Map<String, dynamic>>> eleveCoursMap = {};
+
   bool loading = true;
+  List<Map<String, dynamic>> coursDisponibles = [];
+  Map<int, List<Eleve>> elevesParCours = {};
 
   @override
   void initState() {
@@ -31,16 +33,14 @@ class _HomePageAdminState extends State<HomePageAdmin> {
   void setupRealtime() {
     channel = client.channel('public:eleves');
 
-    // Utilisez onPostgresChanges pour écouter tous les événements (insert, update, delete)
-    channel!.onPostgresChanges(
+    channel!
+        .onPostgresChanges(
       schema: 'public',
       table: 'eleves',
       event: PostgresChangeEvent.all,
-      callback: (payload) {
-        // Rechargez les données dès qu'il y a un changement
-        loadData();
-      },
-    ).subscribe();
+      callback: (_) => loadData(),
+    )
+        .subscribe();
   }
 
   @override
@@ -51,28 +51,22 @@ class _HomePageAdminState extends State<HomePageAdmin> {
     super.dispose();
   }
 
-  Map<int, List<Eleve>> elevesParCours = {};
-  List<Map<String, dynamic>> coursDisponibles = [];
-
   Future<void> loadData() async {
     setState(() => loading = true);
 
-    final elevesData = await db.getAllEleves();
-    final eleveCoursData = await db.getEleveCours();
-    final coursData = await db.getCours();
+    final elevesRaw = await db.getAllEleves();
+    final eleveCoursRaw = await db.getEleveCours();
+    final coursRaw = await db.getCours();
 
-    // Construire map eleveId -> eleve
-    Map<int, Eleve> elevesMap = {
-      for (var e in elevesData) Eleve.fromJson(e).id : Eleve.fromJson(e)
+    final Map<int, Eleve> elevesMap = {
+      for (var e in elevesRaw) Eleve.fromJson(e).id: Eleve.fromJson(e)
     };
 
-    // Initialiser Map pour eleves par cours
-    Map<int, List<Eleve>> map = {};
+    final Map<int, List<Eleve>> map = {};
 
-    // Pour chaque relation eleve-cours
-    for (var ec in eleveCoursData) {
-      int eleveId = ec['eleve_id'];
-      int coursId = ec['cours_id'];
+    for (var ec in eleveCoursRaw) {
+      final int eleveId = ec['eleve_id'];
+      final int coursId = ec['cours_id'];
       if (elevesMap.containsKey(eleveId)) {
         map.putIfAbsent(coursId, () => []);
         map[coursId]!.add(elevesMap[eleveId]!);
@@ -81,11 +75,10 @@ class _HomePageAdminState extends State<HomePageAdmin> {
 
     setState(() {
       elevesParCours = map;
-      coursDisponibles = coursData;
+      coursDisponibles = coursRaw;
       loading = false;
     });
   }
-
 
   String formatDate(DateTime? date) {
     if (date == null) return "Date inconnue";
@@ -94,12 +87,6 @@ class _HomePageAdminState extends State<HomePageAdmin> {
     } catch (_) {
       return "Date invalide";
     }
-  }
-
-  String getNomsCours(int eleveId) {
-    final cours = eleveCoursMap[eleveId];
-    if (cours == null || cours.isEmpty) return "Aucun cours";
-    return cours.map((c) => c['nom']).join(', ');
   }
 
   @override
@@ -112,31 +99,37 @@ class _HomePageAdminState extends State<HomePageAdmin> {
           ? const Center(child: Text("Aucun cours trouvé"))
           : ListView(
         children: coursDisponibles.map((cours) {
-          final idCours = cours['id'] as int;
-          final nomCours = cours['nom'] as String;
-          final listeEleves = elevesParCours[idCours] ?? [];
+          final int idCours = cours['id'] as int;
+          final String nomCours = cours['nom'] as String;
+          final List<Eleve> listeEleves = elevesParCours[idCours] ?? [];
 
           return ExpansionTile(
-            title: Text(nomCours),
+            title: Text(
+              "$nomCours (${listeEleves.length} élève${listeEleves.length > 1 ? 's' : ''})",
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             children: listeEleves.isEmpty
                 ? [const ListTile(title: Text("Aucun élève"))]
                 : listeEleves.map((e) {
-              return ListTile(
-                title: Text("${e.prenom} ${e.nom}"),
-                subtitle: Text(
-                  "1ère année danse : ${e.anneePremiereDanse}\nAdhésion : ${e.adhesionAJour ? 'OK' : 'Non'}",
+              return Container(
+                color: e.adhesionAJour
+                    ? const Color(0xFFECC440)
+                    : const Color(0xFFDDAC17),
+                child: ListTile(
+                  title: Text("${e.prenom} ${e.nom}"),
+                  subtitle: Text(
+                        "Adhésion : ${e.adhesionAJour ? 'OK' : 'Non'}",
+                  ),
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EleveEditPage(eleveId: e.id),
+                      ),
+                    );
+                    await loadData();
+                  },
                 ),
-                onTap: () async {
-                  // Ouvrir la page éditeur pour cet élève
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EleveEditPage(eleve: e),
-                    ),
-                  );
-                  // Recharger les données afin que les changements soient visibles
-                  await loadData();
-                },
               );
             }).toList(),
           );
@@ -155,5 +148,4 @@ class _HomePageAdminState extends State<HomePageAdmin> {
       ),
     );
   }
-
 }

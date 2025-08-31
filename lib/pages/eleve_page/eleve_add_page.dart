@@ -76,7 +76,6 @@ class _EleveAddPageState extends State<EleveAddPage> {
       prenomParent: prenomParentController.text.trim(),
       emailParent: emailParentController.text.trim(),
       telParent: telParentController.text.trim(),
-      anneePremiereDanse: anneePremiereDanseController.text.trim(),
       adhesionAJour: adhesionAJour,
       coursIds: coursSelectionnes, // List<int>
     );
@@ -104,7 +103,6 @@ class _EleveAddPageState extends State<EleveAddPage> {
               TextFormField(controller: prenomParentController, decoration: const InputDecoration(labelText: "Prénom parent")),
               TextFormField(controller: emailParentController, decoration: const InputDecoration(labelText: "Email parent")),
               TextFormField(controller: telParentController, decoration: const InputDecoration(labelText: "Téléphone parent")),
-              TextFormField(controller: anneePremiereDanseController, decoration: const InputDecoration(labelText: "1ère année danse")),
               SwitchListTile(title: const Text("Adhésion à jour"), value: adhesionAJour, onChanged: (v) => setState(() => adhesionAJour = v)),
               const SizedBox(height: 16),
               const Text("Cours", style: TextStyle(fontWeight: FontWeight.bold)),

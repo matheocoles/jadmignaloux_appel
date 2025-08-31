@@ -7,6 +7,12 @@ class ElevePage extends StatelessWidget {
 
   const ElevePage({super.key, required this.eleve});
 
+  String formatDate(DateTime date) {
+    return "${date.day.toString().padLeft(2, '0')}/"
+        "${date.month.toString().padLeft(2, '0')}/"
+        "${date.year}";
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -16,13 +22,15 @@ class ElevePage extends StatelessWidget {
         child: ListView(
           children: [
             Text("👤 Informations Élève", style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 8),
             Text("Nom : ${eleve.nom}"),
             Text("Prénom : ${eleve.prenom}"),
-            Text("Date de naissance : ${eleve.dateNaissance}"), // déjà une String
+            Text("Date de naissance : ${formatDate(eleve.dateNaissance)}"),
 
             const SizedBox(height: 16),
 
             Text("👪 Parent", style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 8),
             Text("Nom : ${eleve.nomParent}"),
             Text("Prénom : ${eleve.prenomParent}"),
             Text("Email : ${eleve.emailParent}"),
@@ -31,7 +39,7 @@ class ElevePage extends StatelessWidget {
             const SizedBox(height: 16),
 
             Text("📅 Historique", style: Theme.of(context).textTheme.titleLarge),
-            Text("Première année : ${eleve.anneePremiereDanse}"),
+            const SizedBox(height: 8),
             Row(
               children: [
                 const Text("Adhésion à jour : "),
@@ -41,6 +49,14 @@ class ElevePage extends StatelessWidget {
                 ),
               ],
             ),
+
+            const SizedBox(height: 16),
+
+            if (eleve.cours != null && eleve.cours!.isNotEmpty) ...[
+              Text("🎓 Cours suivis", style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              ...eleve.cours!.map((cours) => Text("• ${cours['nom']}")).toList(),
+            ],
           ],
         ),
       ),
@@ -50,7 +66,7 @@ class ElevePage extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => EleveEditPage(eleve: eleve),
+              builder: (context) => EleveEditPage(eleveId: eleve.id),
             ),
           );
         },

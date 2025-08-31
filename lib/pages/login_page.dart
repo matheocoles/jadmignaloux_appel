@@ -1,8 +1,10 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:jadmignaloux_appel/pages/HomePageMode/Admin/welcome_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'HomePageMode/Admin/home_page.dart';
 import 'HomePageMode/Professeur/home_page.dart';
+import 'HomePageMode/Professeur/welcome_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -25,7 +27,6 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     try {
-      // 🔎 Recherche dans Supabase
       final response = await supabase
           .from('users')
           .select('id, role, prenom, cours_id')
@@ -38,22 +39,22 @@ class _LoginPageState extends State<LoginPage> {
 
       final user = response[0];
       final role = user['role'] as String;
+      final prenomUser = user['prenom'] as String;
+      final coursId = user['cours_id'] as int?;
 
-      // 🎯 Redirection selon rôle
       if (role == 'professeur') {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomePageProf(
-              prenom: user['prenom'],
-              coursId: user['cours_id'],
-            ),
+            builder: (context) => WelcomeProfPage(prenom: prenomUser),
           ),
         );
       } else if (role == 'admin') {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomePageAdmin()),
+          MaterialPageRoute(
+            builder: (context) => WelcomeAdminPage(prenom: user['prenom']),
+          ),
         );
       } else {
         setState(() => error = "Rôle inconnu dans Supabase");
