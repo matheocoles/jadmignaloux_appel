@@ -1,18 +1,13 @@
 ﻿workflows:
-  flutter-workflow:
-    name: Flutter CI/CD
-    max_build_duration: 60
+  ios-workflow:
+    name: Build iOS
     environment:
       flutter: stable
+      xcode: latest
     scripts:
-      - name: Install dependencies
+      - name: Get dependencies
         script: flutter pub get
-#      - name: Run tests
-#        script: flutter test
-      - name: Build APK
-        script: flutter build apk --release
-      - name: Build AppBundle
-        script: flutter build appbundle --release
+      - name: Build iOS
+        script: flutter build ipa --release
     artifacts:
-      - build/app/outputs/flutter-apk/app-release.apk
-      - build/app/outputs/bundle/release/app-release.aab
+      - build/ios/ipa/*.ipa
